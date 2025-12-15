@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mechanism Reaction Calculator</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --primary: #007bff;
+            --bg: #f4f4f9;
+            --panel: #ffffff;
+            --text: #333;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        /* Layout */
+        .container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+        }
+        
+        /* Canvas Area */
+        .simulation-area {
+            flex: 1;
+            background: #eef;
+            position: relative;
+            min-height: 300px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            width: 100%;
+            height: 100%;
+        }
+        .controls-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        input[type=range] {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        /* Scrollable Content Area */
+        .data-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--panel);
+            border-top: 1px solid #ddd;
+        }
+        @media (min-width: 768px) {
+            .data-panel {
+                border-top: none;
+                border-left: 1px solid #ddd;
+                max-width: 400px;
+            }
+        }
+
+        /* Inputs Grid */
+        .input-group {
+            margin-bottom: 20px;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .input-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-item label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .input-item input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        /* Results */
+        .results-card {
+            background: #fff;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        .result-val {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* Math Equations */
+        .equation-box {
+            background: #fffcf5;
+            padding: 10px;
+            border: 1px solid #faebcc;
+            margin-top: 10px;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        
+        h2 { font-size: 1.2em; margin-top: 0; }
+        h3 { font-size: 1em; margin: 10px 0 5px; color: #555; }
+    </style>
+</head>
+<body>
+
+<header>
+    Mechanism Analyzer
+</header>
+
+<div class="container">
+    <div class="simulation-area">
+        <canvas id="simCanvas"></canvas>
+        <div class="controls-overlay">
+            <label for="liftSlider"><strong>Lift Control (Piston Extension)</strong></label>
+            <input type="range" id="liftSlider" min="0" max="100" value="10">
+        </div>
+    </div>
+
+    <div class="data-panel">
+        <div class="input-group">
+            <h2>Dimensions & Load</h2>
+            <div class="input-grid">
+                <div class="input-item"><label>A: Top Beam (cm)</label><input type="number" id="inp_A" value="400"></div>
+                <div class="input-item"><label>B: Base Width (cm)</label><input type="number" id="inp_B" value="350"></div>
+                <div class="input-item"><label>C: Left Arm (cm)</label><input type="number" id="inp_C" value="180"></div>
+                <div class="input-item"><label>D: Right Arm (cm)</label><input type="number" id="inp_D" value="150"></div>
+                <div class="input-item"><label>E: Piston Mount on C (cm)</label><input type="number" id="inp_E" value="100"></div>
+                <div class="input-item"><label>H: Piston Base X (cm)</label><input type="number" id="inp_H" value="120"></div>
+                <div class="input-item"><label>Load Mass (kg)</label><input type="number" id="inp_Load" value="6000"></div>
+            </div>
+            <div style="margin-top:10px; font-size:0.8em; color:#666;">
+                * F and G supports are visual only for this calculation.
+            </div>
+        </div>
+
+        <div class="results-card">
+            <h2>Real-time Results</h2>
+            <div class="result-row"><span>Piston Force Required:</span> <span id="res_piston" class="result-val">-</span></div>
+            <div class="result-row"><span>Link D Force (Axial):</span> <span id="res_Fd" class="result-val">-</span></div>
+            <div class="result-row"><span>Max Bending Moment (A):</span> <span id="res_moment" class="result-val">-</span></div>
+            <div class="result-row"><span>Angle of Beam A:</span> <span id="res_angleA" class="result-val">-</span></div>
+        </div>
+
+        <div class="equation-box">
+            <h3>Calculations</h3>
+            <div id="math-display">
+                Initialising equations...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- Physics Engine ---
+
+const G = 9.81; // m/s^2
+
+// State
+let params = {
+    A: 400, B: 350, C: 180, D: 150, E: 100, H: 120, 
+    Load: 6000,
+    angleC: Math.PI / 2 // Radians
+};
+
+// Points (calculated per frame)
+let P1 = {x:0, y:0}; // Left pivot
+let P2 = {x:0, y:0}; // Top Left
+let P3 = {x:0, y:0}; // Top Right
+let P4 = {x:0, y:0}; // Right Pivot (Base of D)
+let P_piston_base = {x:0, y:0};
+let P_piston_head = {x:0, y:0};
+
+function updateGeometry(sliderVal) {
+    // Map slider 0-100 to angle range for Link C
+    // Range: roughly 45 deg to 135 deg
+    const minAng = 45 * Math.PI / 180;
+    const maxAng = 130 * Math.PI / 180;
+    const targetAngle = minAng + (sliderVal / 100) * (maxAng - minAng);
+    params.angleC = targetAngle;
+
+    // 1. Pivot P1 is (0,0)
+    P1 = {x: 0, y: 0};
+
+    // 2. Pivot P4 is at (B, 0)
+    P4 = {x: params.B, y: 0};
+
+    // 3. Piston Base
+    P_piston_base = {x: params.H, y: 0};
+
+    // 4. Point P2 (Top of Link C)
+    P2.x = params.C * Math.cos(params.angleC);
+    P2.y = params.C * Math.sin(params.angleC);
+
+    // 5. Point P3 (Intersection of Circle A from P2 and Circle D from P4)
+    // We need intersection of circle centered at P2 radius A, and center P4 radius D
+    const d2 = Math.pow(P4.x - P2.x, 2) + Math.pow(P4.y - P2.y, 2);
+    const d = Math.sqrt(d2);
+
+    // Check validity
+    if (d > params.A + params.D || d < Math.abs(params.A - params.D) || d === 0) {
+        return false; // Impossible geometry
+    }
+
+    const a = (Math.pow(params.A, 2) - Math.pow(params.D, 2) + d2) / (2 * d);
+    const h = Math.sqrt(Math.max(0, Math.pow(params.A, 2) - a*a));
+
+    const x2 = P2.x + a * (P4.x - P2.x) / d;
+    const y2 = P2.y + a * (P4.y - P2.y) / d;
+
+    // Two solutions, we want the one where y is higher (elbow up/standard)
+    P3.x = x2 - h * (P4.y - P2.y) / d;
+    P3.y = y2 + h * (P4.x - P2.x) / d;
+
+    // 6. Piston Head (on Link C, distance E from P1)
+    const ratio = params.E / params.C;
+    P_piston_head.x = P2.x * ratio;
+    P_piston_head.y = P2.y * ratio;
+
+    return true;
+}
+
+function calculateForces() {
+    // Vector helper
+    const sub = (v1, v2) => ({x: v1.x - v2.x, y: v1.y - v2.y});
+    const mag = (v) => Math.sqrt(v.x*v.x + v.y*v.y);
+    const normalize = (v) => { const m = mag(v); return {x: v.x/m, y: v.y/m}; };
+    const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x; // 2D cross product returns scalar z
+
+    // 1. Load Vector (W)
+    const W_mag = params.Load * G; // Newtons (using g=9.81)
+    const W_vec = {x: 0, y: -W_mag};
+
+    // Midpoint of Beam A (Center of Gravity)
+    const P_mid_A = {x: (P2.x + P3.x)/2, y: (P2.y + P3.y)/2};
+
+    // --- FBD of Beam A ---
+    // Sum of Moments about P2 (Top-Left Pivot) = 0
+    // Moments: Torque from Gravity + Torque from Link D Force
+    
+    // Vector P2 to COG
+    const r_W = sub(P_mid_A, P2);
+    // Moment from Weight = r_W x W_vec
+    const M_weight = cross(r_W, W_vec);
+
+    // Force from Link D acts along line P4 -> P3 (assuming D is a 2-force member)
+    const vec_D = sub(P3, P4); 
+    const u_D = normalize(vec_D); // Unit vector of force D acting on P3
+    // We assume Force D acts ON Beam A AT P3. Direction? 
+    // If D is in compression, force on A is pointing away from P4 (upwards-ish). Let's assume magnitude F_d.
+    // Vector r_D = P3 - P2
+    const r_D = sub(P3, P2);
+    
+    // Equation: M_weight + (r_D x (F_d * u_D)) = 0
+    // F_d = - M_weight / cross(r_D, u_D)
+    
+    const lever_arm_D = cross(r_D, u_D);
+    let F_d = 0;
+    if (Math.abs(lever_arm_D) > 1e-5) {
+        F_d = -M_weight / lever_arm_D;
+    }
+
+    const Force_D_vec = {x: F_d * u_D.x, y: F_d * u_D.y};
+
+    // --- FBD of Link C ---
+    // Link C has: Reaction at P1, Force from Piston, Force from Beam A.
+    // Force from Beam A on C (F_A_on_C) = - (Force from C on A)
+    // From A equilibrium: F_C_on_A + F_D_on_A + W = 0
+    // -> F_C_on_A = - (F_D_on_A + W)
+    // -> F_A_on_C = - F_C_on_A = F_D_on_A + W
+    
+    const F_A_on_C = {
+        x: Force_D_vec.x + W_vec.x,
+        y: Force_D_vec.y + W_vec.y
+    };
+
+    // Sum Moments about P1 (Base of C) = 0
+    // Moments: Torque from Beam A force + Torque from Piston
+    
+    // r_top = P2 - P1 (which is just P2 since P1 is 0,0)
+    const M_from_A = cross(P2, F_A_on_C);
+
+    // Piston Force Vector direction
+    const vec_piston = sub(P_piston_head, P_piston_base);
+    const u_piston = normalize(vec_piston);
+    // Force acts AT P_piston_head.
+    // Let Magnitude be F_p
+    // r_piston = P_piston_head - P1
+    
+    // Equation: M_from_A + cross(r_piston, F_p * u_piston) = 0
+    const lever_arm_piston = cross(P_piston_head, u_piston);
+    let F_p = 0;
+    if (Math.abs(lever_arm_piston) > 1e-5) {
+        F_p = -M_from_A / lever_arm_piston;
+    }
+
+    // --- Bending Moment Calculation (Approximate) ---
+    // Max moment on Beam A (Distributed load W)
+    // Length L = A
+    // Component of W perpendicular to beam
+    const dx = P3.x - P2.x;
+    const dy = P3.y - P2.y;
+    const angleA = Math.atan2(dy, dx);
+    const W_perp = W_mag * Math.cos(angleA); // Normal component
+    // Max Moment for simply supported beam with distributed load = (w * L^2) / 8 = (TotalW * L) / 8
+    // Note: This assumes pin supports at ends. In reality, it's a link, but this is a good approximation for the structural requirement.
+    // L in meters = params.A / 100
+    const L_meters = params.A / 100;
+    const max_moment = (W_perp * L_meters) / 8;
+
+    return {
+        pistonForce: F_p,
+        linkDForce: F_d,
+        maxMoment: max_moment,
+        angleA_deg: angleA * 180 / Math.PI
+    };
+}
+
+// --- Rendering ---
+
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+
+function draw() {
+    // Handle resizing
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Clear
+    ctx.clearRect(0, 0, w, h);
+
+    // Coordinate Transform
+    // Fit the mechanism in the view
+    // Mechanism bounds roughly: X: -50 to B+50, Y: 0 to C+50
+    const maxX = Math.max(params.B, params.H) + 50;
+    const maxY = Math.max(params.C, params.A/2) + 50; // approximate
+    const scale = Math.min(w / (maxX + 100), h / (maxY + 100)) * 0.8;
+    
+    ctx.save();
+    ctx.translate(w/2 - (params.B * scale)/2, h - 50); // Center horizontally, bottom aligned
+    ctx.scale(1, -1); // Flip Y so positive is up
+
+    // Helper for lines
+    const line = (p1, p2, color, width) => {
+        ctx.beginPath();
+        ctx.moveTo(p1.x * scale, p1.y * scale);
+        ctx.lineTo(p2.x * scale, p2.y * scale);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    };
+
+    const circle = (p, r, color) => {
+        ctx.beginPath();
+        ctx.arc(p.x * scale, p.y * scale, r, 0, 2*Math.PI);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    };
+
+    // Ground Line
+    line({x:-50, y:0}, {x: params.B + 50, y:0}, '#333', 2);
+
+    // Piston (Yellow)
+    // Cylinder
+    ctx.strokeStyle = '#f0c000';
+    ctx.lineWidth = 12 * (scale/5); // dynamic width
+    ctx.beginPath();
+    ctx.moveTo(P_piston_base.x * scale, P_piston_base.y * scale);
+    // Draw only half way to simulate cylinder housing
+    const midPiston = {
+        x: (P_piston_base.x + P_piston_head.x)/2, 
+        y: (P_piston_base.y + P_piston_head.y)/2
+    };
+    ctx.lineTo(midPiston.x * scale, midPiston.y * scale);
+    ctx.stroke();
+    
+    // Rod
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 6 * (scale/5);
+    ctx.beginPath();
+    ctx.moveTo(midPiston.x * scale, midPiston.y * scale);
+    ctx.lineTo(P_piston_head.x * scale, P_piston_head.y * scale);
+    ctx.stroke();
+
+    // Link C (Left Arm) - Grey
+    line(P1, P2, '#666', 8);
+
+    // Link D (Right Arm) - Grey
+    line(P4, P3, '#666', 8);
+
+    // Beam A (Top Load) - Red
+    line(P2, P3, '#e04444', 12);
+
+    // Distributed Load Arrows (Visual)
+    ctx.fillStyle = '#e04444';
+    const numArrows = 5;
+    for(let i=0; i<=numArrows; i++) {
+        const t = i/numArrows;
+        const px = P2.x + t*(P3.x - P2.x);
+        const py = P2.y + t*(P3.y - P2.y);
+        // Draw arrow pointing down relative to beam? Gravity is straight down
+        // Visualizing gravity load
+        const arrowLen = 20;
+        ctx.save();
+        ctx.translate(px * scale, py * scale);
+        ctx.scale(1, -1); // unflip for text/arrows
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -arrowLen); // Down
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Joints
+    circle(P1, 5, 'white');
+    circle(P4, 5, 'white');
+    circle(P2, 5, 'white');
+    circle(P3, 5, 'white');
+    circle(P_piston_base, 4, 'white');
+    circle(P_piston_head, 4, 'white');
+
+    // Labels
+    ctx.scale(1, -1); // Unflip for text
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Arial';
+    ctx.fillText("C", (P1.x - 20)*scale, -(P1.y + params.C/2)*scale);
+    ctx.fillText("A", (P2.x + params.A/2)*scale, -(P2.y + 20)*scale);
+    ctx.fillText("D", (P4.x + 10)*scale, -(P3.y/2)*scale);
+
+    ctx.restore();
+}
+
+// --- Main Loop & Events ---
+
+function updateAll() {
+    // 1. Read Inputs
+    params.A = parseFloat(document.getElementById('inp_A').value);
+    params.B = parseFloat(document.getElementById('inp_B').value);
+    params.C = parseFloat(document.getElementById('inp_C').value);
+    params.D = parseFloat(document.getElementById('inp_D').value);
+    params.E = parseFloat(document.getElementById('inp_E').value);
+    params.H = parseFloat(document.getElementById('inp_H').value);
+    params.Load = parseFloat(document.getElementById('inp_Load').value);
+    const sliderVal = parseFloat(document.getElementById('liftSlider').value);
+
+    // 2. Solve Geometry
+    const valid = updateGeometry(sliderVal);
+    
+    if (valid) {
+        // 3. Solve Forces
+        const results = calculateForces();
+        
+        // 4. Update UI
+        document.getElementById('res_piston').innerText = (results.pistonForce / 9.81).toFixed(0) + " kgf (" + (results.pistonForce/1000).toFixed(1) + " kN)";
+        document.getElementById('res_Fd').innerText = (results.linkDForce / 9.81).toFixed(0) + " kgf";
+        document.getElementById('res_moment').innerText = results.maxMoment.toFixed(0) + " Nm";
+        document.getElementById('res_angleA').innerText = results.angleA_deg.toFixed(1) + "°";
+
+        // Update Math Display (LaTex)
+        // Only update math periodically or on demand to save performance? 
+        // For now, we update the strings.
+        updateEquations(results);
+
+        // 5. Draw
+        draw();
+    } else {
+        // Geometry broken
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        ctx.fillText("Invalid Geometry", 50, 50);
+    }
+}
+
+function updateEquations(res) {
+    const el = document.getElementById('math-display');
+    
+    // Convert forces to kN for display cleanliness
+    const Fp_kN = (res.pistonForce/1000).toFixed(2);
+    const W_kN = (params.Load * 9.81 / 1000).toFixed(2);
+    const theta = params.angleC.toFixed(2);
+
+    const tex = `
+    $$ \\textbf{Equilibrium Analysis} $$
+    $$ W = ${params.Load} \\text{ kg} \\approx ${W_kN} \\text{ kN} $$
+    $$ \\sum M_{P1} = 0 \\implies F_{piston} \\times d_{arm} = M_{load} $$
+    
+    $$ F_{piston} = \\frac{\\text{Load Moment}}{\\text{Lever Arm}} $$
+    $$ \\mathbf{F_{piston} \\approx ${Fp_kN} \\text{ kN}} $$
+
+    $$ \\textbf{Bending Moment on Beam A} $$
+    $$ M_{max} \\approx \\frac{W_{\\perp} L}{8} $$
+    $$ \\mathbf{M_{max} = ${(res.maxMoment/1000).toFixed(2)} \\text{ kNm}} $$
+    `;
+    
+    el.innerHTML = tex;
+    if(window.MathJax) {
+        MathJax.typesetPromise();
+    }
+}
+
+// Listeners
+const inputs = document.querySelectorAll('input');
+inputs.forEach(i => i.addEventListener('input', updateAll));
+window.addEventListener('resize', draw);
+
+// Init
+updateAll();
+
+</script>
+</body>
+</html>
