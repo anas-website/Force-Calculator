@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>מחשבון מנגנון הידראולי</title>
+    <title>מחשבון הידראולי מתקדם</title>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root {
-            --primary: #0056b3; /* כחול כהה יותר לקריאות */
-            --accent: #ff9800;
-            --load-color: #d32f2f;
+            --primary: #1976D2;
+            --accent: #FF6D00;
             --text: #222;
-            --bg: #f8f9fa;
+            --bg: #f5f5f5;
+            --panel: #ffffff;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -21,117 +21,112 @@
             background: var(--bg);
             color: var(--text);
             height: 100vh; display: flex; flex-direction: column; overflow: hidden;
-            text-align: right; /* RTL alignment */
+            text-align: right;
         }
 
-        /* Canvas Area */
+        /* Canvas */
         #canvas-container {
-            position: relative; width: 100%; height: 45vh;
-            background: #eef2f5; border-bottom: 2px solid #ddd;
+            position: relative; width: 100%; height: 42vh;
+            background: #eef4f9; border-bottom: 1px solid #ccc;
             overflow: hidden; touch-action: none;
         }
         canvas { display: block; width: 100%; height: 100%; }
-        .zoom-hint {
-            position: absolute; top: 10px; left: 10px; /* צד שמאל בעברית */
-            background: rgba(255,255,255,0.9); padding: 5px 12px;
-            border-radius: 20px; font-size: 0.75rem; color: #555; pointer-events: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        .overlay-info {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(255,255,255,0.9); padding: 4px 10px;
+            border-radius: 15px; font-size: 0.75rem; color: #555; pointer-events: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         /* Controls */
         .control-strip {
-            background: #fff; padding: 15px 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 10; flex-shrink: 0;
+            background: var(--panel); padding: 12px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 10; flex-shrink: 0;
         }
-        .slider-label {
-            display: flex; justify-content: space-between;
-            font-weight: bold; margin-bottom: 8px; color: var(--primary);
+        .slider-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px; color: var(--primary); font-weight: bold;
         }
-        input[type=range] { width: 100%; height: 25px; cursor: pointer; }
+        input[type=range] { width: 100%; height: 30px; }
 
         /* Scroll Area */
         .scroll-content {
             flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px;
-            background: #fff;
+            background: var(--panel);
         }
-        
+
         /* Tabs */
         .tabs {
-            display: flex; margin-bottom: 20px; background: #eee;
-            border-radius: 8px; padding: 4px;
+            display: flex; background: #e0e0e0; padding: 4px; border-radius: 8px; margin-bottom: 15px;
         }
         .tab {
-            flex: 1; text-align: center; padding: 10px; border-radius: 6px;
-            font-weight: 600; cursor: pointer; transition: 0.2s;
-            color: #666;
+            flex: 1; text-align: center; padding: 8px; font-weight: 600; font-size: 0.95rem;
+            border-radius: 6px; cursor: pointer; color: #666; transition: 0.2s;
         }
-        .tab.active { background: #fff; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tab.active { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-        /* Input Styles */
+        /* Inputs */
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .input-group label {
-            display: block; font-size: 0.85rem; color: #555; margin-bottom: 4px; font-weight: 500;
+            display: block; font-size: 0.8rem; color: #666; margin-bottom: 4px;
         }
         .input-group input {
-            width: 100%; padding: 10px; font-size: 1rem;
-            border: 1px solid #ccc; border-radius: 6px; background: #fafafa;
-            text-align: left; /* מספרים נראים טוב יותר משמאל */
-            direction: ltr;
+            width: 100%; padding: 8px; font-size: 1rem;
+            border: 1px solid #ddd; border-radius: 4px; background: #fafafa;
+            direction: ltr; text-align: left;
         }
-        .input-group input:focus { border-color: var(--primary); outline: none; }
+        .input-group input:focus { border-color: var(--primary); outline: none; background: #fff; }
 
         /* Math Display */
-        .math-block {
-            background: #fffcf5; border: 1px solid #efe5ce; padding: 15px;
-            border-radius: 8px; overflow-x: auto; font-size: 0.95rem; margin-bottom: 15px;
-            direction: ltr; /* MathJax aligns better LTR even in Hebrew context usually, but we will force RTL text inside */
-            text-align: left;
+        .math-box {
+            background: #fffdf0; border: 1px solid #f5eabb; padding: 12px;
+            border-radius: 6px; margin-bottom: 15px; overflow-x: auto;
+            direction: ltr; text-align: left; font-size: 0.9rem;
         }
-        .math-header {
-            font-weight: bold; color: var(--primary); margin-bottom: 10px;
-            text-align: right; direction: rtl; border-bottom: 1px solid #ddd; padding-bottom: 5px;
+        .math-title {
+            text-align: right; direction: rtl; color: var(--primary);
+            font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #e0d8b0; padding-bottom: 4px;
+        }
+        .step-desc {
+            text-align: right; direction: rtl; color: #444; font-size: 0.9em; margin-top: 8px;
         }
 
         .section { display: none; }
         .section.active { display: block; }
-        
-        h3 { margin-top: 0; color: #333; font-size: 1.1rem; border-right: 4px solid var(--primary); padding-right: 8px; }
     </style>
 </head>
 <body>
 
 <div id="canvas-container">
-    <div class="zoom-hint">צבוט לזום • גרור להזזה</div>
+    <div class="overlay-info">גרור להזזה • צבוט לזום</div>
     <canvas id="simCanvas"></canvas>
 </div>
 
 <div class="control-strip">
-    <div class="slider-label"><span>הרמת בוכנה</span><span id="angleDisplay">0°</span></div>
-    <input type="range" id="liftSlider" min="0" max="100" value="20">
+    <div class="slider-header">
+        <span>שליטה בבוכנה</span>
+        <span id="angleDisplay" style="color:#333">0°</span>
+    </div>
+    <input type="range" id="liftSlider" min="0" max="100" value="25">
 </div>
 
 <div class="scroll-content">
     <div class="tabs">
         <div class="tab active" onclick="switchTab('inputs', event)">נתונים</div>
-        <div class="tab" onclick="switchTab('calcs', event)">חישובים מפורטים</div>
+        <div class="tab" onclick="switchTab('calcs', event)">חישובים (kg/cm)</div>
     </div>
 
     <div id="tab-inputs" class="section active">
-        <h3>מידות גיאומטריות (ס״מ)</h3>
+        <h4 style="margin:0 0 10px 0; color:#444;">מידות (cm) ועומס (kg)</h4>
         <div class="input-grid">
-            <div class="input-group"><label>A: אורך קורה עליונה</label><input type="number" id="inp_A" value="400"></div>
-            <div class="input-group"><label>B: רוחב בסיס</label><input type="number" id="inp_B" value="350"></div>
+            <div class="input-group"><label>A: קורה עליונה</label><input type="number" id="inp_A" value="400"></div>
+            <div class="input-group"><label>B: בסיס</label><input type="number" id="inp_B" value="350"></div>
             <div class="input-group"><label>C: זרוע שמאל</label><input type="number" id="inp_C" value="180"></div>
             <div class="input-group"><label>D: זרוע ימין</label><input type="number" id="inp_D" value="150"></div>
-            <div class="input-group"><label>E: מיקום חיבור בוכנה (על C)</label><input type="number" id="inp_E" value="100"></div>
-            <div class="input-group"><label>H: מיקום בסיס בוכנה (X)</label><input type="number" id="inp_H" value="120"></div>
-            <div class="input-group"><label>F: סמך שמאל (מרחק מ-P1)</label><input type="number" id="inp_F" value="50"></div>
-            <div class="input-group"><label>G: סמך ימין (מרחק מ-P4)</label><input type="number" id="inp_G" value="50"></div>
-        </div>
-        
-        <h3 style="margin-top:20px;">עומסים</h3>
-        <div class="input-grid">
-            <div class="input-group"><label>מסה כוללת (ק״ג)</label><input type="number" id="inp_Load" value="6000"></div>
+            <div class="input-group"><label>E: חיבור בוכנה</label><input type="number" id="inp_E" value="100"></div>
+            <div class="input-group"><label>H: בסיס בוכנה X</label><input type="number" id="inp_H" value="120"></div>
+            <div class="input-group"><label>משקל עומס (kg)</label><input type="number" id="inp_Load" value="6000"></div>
+            <div class="input-group"><label>קוטר בוכנה (cm)</label><input type="number" id="inp_PistonD" value="10"></div>
         </div>
     </div>
 
@@ -141,163 +136,144 @@
 </div>
 
 <script>
-// --- מנוע פיזיקלי ---
-const G_accel = 9.81; 
-let params = { A:400, B:350, C:180, D:150, E:100, H:120, F:50, G:50, Load:6000 };
+// --- PHYSICS & MATH ---
 
-// נקודות גיאומטריות
+// Inputs state
+let params = { 
+    A:400, B:350, C:180, D:150, E:100, H:120, 
+    Load:6000, PistonD: 10 
+};
+
+// Geometry Points
 let P1={x:0,y:0}, P2={x:0,y:0}, P3={x:0,y:0}, P4={x:0,y:0};
 let P_piston_base={x:0,y:0}, P_piston_head={x:0,y:0};
-let Sup_L={x:0,y:0}, Sup_R={x:0,y:0};
 
-// מצלמה
+// Viewport
 let cam = { x: 0, y: 0, scale: 1.0 };
 let isDragging = false;
 let lastTouch = { x:0, y:0, dist:0 };
 
-// פונקציית פתרון גיאומטריה
 function solveGeometry(sliderVal) {
-    // מיפוי הסליידר לזווית הזרוע C (בין 45 ל-135 מעלות)
+    // זווית זרוע C (נשלטת ע"י סליידר)
     const angleC_deg = 45 + (sliderVal/100)*(135-45);
     const radC = angleC_deg * Math.PI / 180;
 
-    // נקודות קבועות
+    // נקודות בסיס
     P1 = {x: 0, y: 0};
     P4 = {x: params.B, y: 0};
     P_piston_base = {x: params.H, y: 0};
-    Sup_L = {x: params.F, y: -20};
-    Sup_R = {x: params.B - params.G, y: -20};
 
-    // חישוב קצה זרוע C (נקודה P2)
+    // נקודה P2 (ראש זרוע C)
     P2.x = params.C * Math.cos(radC);
     P2.y = params.C * Math.sin(radC);
 
-    // חישוב נקודה P3 (חיתוך מעגלים מזרוע D וקורה A)
+    // מציאת P3 (חיתוך מעגלים)
     const d_base = Math.hypot(P4.x - P2.x, P4.y - P2.y);
-    
-    // בדיקת היתכנות פיזיקלית
-    if (d_base > params.A + params.D || d_base < Math.abs(params.A - params.D) || d_base <= 1e-5) return null;
+    if (d_base > params.A + params.D || d_base < Math.abs(params.A - params.D)) return null;
 
-    // חיתוך מעגלים
     const a = (params.A**2 - params.D**2 + d_base**2) / (2 * d_base);
     const h = Math.sqrt(Math.max(0, params.A**2 - a*a));
     const x2 = P2.x + a * (P4.x - P2.x) / d_base;
     const y2 = P2.y + a * (P4.y - P2.y) / d_base;
 
-    // בחירת הפתרון העליון ("מרפק מעלה")
+    // פתרון עליון
     P3.x = x2 - h * (P4.y - P2.y) / d_base;
     P3.y = y2 + h * (P4.x - P2.x) / d_base;
 
-    // ראש הבוכנה על זרוע C
+    // בוכנה
     const ratio = params.E / params.C;
     P_piston_head.x = P2.x * ratio;
     P_piston_head.y = P2.y * ratio;
 
-    // חישוב זוויות
+    // זוויות
     const angA = Math.atan2(P3.y - P2.y, P3.x - P2.x);
-    const angD = Math.atan2(P3.y - P4.y, P3.x - P4.x);
+    // זווית D (רדיאנים, ביחס לאופק)
+    const angD_rad = Math.atan2(P3.y - P4.y, P3.x - P4.x);
+    // זווית פנימית בין B ל-D (במעלות)
+    // B היא ציר ה-X השלילי מנקודה P4, או פשוט האופק. הזווית הפנימית היא 180 - הזווית הגלובלית
+    const angD_deg_global = angD_rad * 180 / Math.PI;
+    const angBD = 180 - angD_deg_global;
+
     const angPiston = Math.atan2(P_piston_head.y - P_piston_base.y, P_piston_head.x - P_piston_base.x);
 
-    return { radC, angA, angD, angPiston };
+    return { radC, angA, angD: angD_rad, angBD, angPiston };
 }
 
-// פונקציית חישוב כוחות
 function solveForces(geo) {
     if(!geo) return null;
-    const W = params.Load * G_accel; // עומס בניוטון
     
+    // יחידות: הכל ב-kg וב-cm. לא ממירים לניוטון כדי לשמור על בקשת המשתמש.
+    const W = params.Load; // kg
+
     // --- שלב 1: שיווי משקל קורה עליונה A ---
-    // קורה A נתמכת ע"י C (ב-P2) ו-D (ב-P3).
-    // נניח ש-D הוא מוט דו-כוח (סופג רק ציר).
+    // מומנט סביב P2. עומס W פועל באמצע הקורה.
+    const midA = { x: (P2.x+P3.x)/2, y: (P2.y+P3.y)/2 };
     
-    const dirD = { x: Math.cos(geo.angD), y: Math.sin(geo.angD) };
-    const midA = { x: (P2.x+P3.x)/2, y: (P2.y+P3.y)/2 }; // מרכז כובד
-    
-    // סכום מומנטים סביב P2 למציאת הכוח ב-D
-    // מומנט עומס (פועל ב-midA כלפי מטה)
-    const M_load_P2 = (midA.x - P2.x) * (-W); // זרוע X כפול כוח Y
+    // זרוע המומנט של העומס (מרחק אופקי מ-P2 למרכז העומס)
+    const arm_load_x = midA.x - P2.x;
+    const Moment_Load = arm_load_x * W; // kg*cm
 
-    // מומנט מכוח D (פועל ב-P3)
-    const r_D_x = P3.x - P2.x;
-    const r_D_y = P3.y - P2.y;
-    // זרוע המומנט ל-D:
-    const lever_D = r_D_x * dirD.y - r_D_y * dirD.x;
+    // כוח מזרוע D (פועל ב-P3). נניח D הוא מוט דו-כוח.
+    // מומנט שמפעיל כוח D סביב P2 חייב לאזן את העומס.
+    const r_D = { x: P3.x - P2.x, y: P3.y - P2.y }; // וקטור מ-P2 ל-P3
+    const dirD = { x: Math.cos(geo.angD), y: Math.sin(geo.angD) }; // כיוון הכוח D
     
-    let F_d = 0; // כוח במוט D (חיובי = מתיחה, שלילי = לחיצה)
-    // הערה: המשוואה היא M_load + F_d * lever = 0
-    if(Math.abs(lever_D) > 1e-5) F_d = -M_load_P2 / lever_D; 
-
-    // ריאקציה שמפעיל A על C (בנקודה P2)
-    // כוחות על A: W + F_d_vec + F_c_vec = 0
-    // לכן F_c_on_A = -(W + F_d)
-    // ולפי חוק 3: F_A_on_C = -F_c_on_A = W + F_d
-    const F_A_on_C_x = F_d * dirD.x;
-    const F_A_on_C_y = F_d * dirD.y - W; // W הוא שלילי, לכן מינוס של מינוס נשאר פה חיבור וקטורי עם כוח הכובד
-
-    // --- חישוב מומנט כפיפה בקורה A ---
-    // קירוב: קורה פשוטה עם עומס מפורס
-    const L_A_m = params.A / 100;
-    // רכיב ניצב של העומס
-    const W_perp = W * Math.cos(geo.angA);
-    const MaxMoment_A = (W_perp * L_A_m) / 8; // qL^2/8 -> WL/8
+    // זרוע הכוח האפקטיבית (מרחק ניצב): Cross Product בדו-ממד
+    // Lever = x*dirY - y*dirX
+    const lever_D = r_D.x * dirD.y - r_D.y * dirD.x;
     
-    // כוח צירי בקורה A (במרכז)
-    // סכום כוחות בציר ה-X המקומי.
-    const F_axial_A = Math.abs(F_d * Math.cos(geo.angD - geo.angA)); // קירוב
+    let F_d = 0;
+    if(Math.abs(lever_D) > 1e-4) F_d = Moment_Load / lever_D; // kg
+
+    // כוח שקורה A מפעילה על זרוע C (בנקודה P2)
+    // לפי שיווי משקל כוחות על A: F_C + F_D + W = 0
+    // F_C = -(F_D + W)
+    // הכוח ש-A מפעיל על C הוא F_A->C = -F_C = F_D + W
+    // וקטור F_D:
+    const F_D_vec = { x: F_d * dirD.x, y: F_d * dirD.y };
+    const W_vec = { x: 0, y: -W };
+    
+    const F_A_on_C = {
+        x: F_D_vec.x + W_vec.x,
+        y: F_D_vec.y + W_vec.y
+    };
 
     // --- שלב 2: שיווי משקל זרוע C ---
-    // סכום מומנטים סביב P1 למציאת כוח בוכנה
-    // מומנט מהכוח שמפעיל A (ב-P2)
-    const M_from_A = P2.x * F_A_on_C_y - P2.y * F_A_on_C_x;
+    // מומנט סביב P1 שנוצר ע"י הכוח מלמעלה (A)
+    // M = r x F
+    // r = P2 (כי P1 ב-0,0)
+    const Moment_C_External = P2.x * F_A_on_C.y - P2.y * F_A_on_C.x; // kg*cm
 
-    // מומנט מהבוכנה (ב-E)
+    // כוח הבוכנה צריך להתנגד למומנט הזה.
+    // כוח הבוכנה פועל בנקודה P_piston_head לכיוון P_piston_base (או להיפך, דחיפה)
     const dirP = { x: Math.cos(geo.angPiston), y: Math.sin(geo.angPiston) };
+    
+    // זרוע המומנט של הבוכנה (מרחק ניצב מ-P1 לקו הפעולה של הבוכנה)
+    // r_piston = P_piston_head.
     const lever_piston = P_piston_head.x * dirP.y - P_piston_head.y * dirP.x;
     
     let F_p = 0;
-    if(Math.abs(lever_piston) > 1e-5) F_p = -M_from_A / lever_piston;
-
-    // --- חישוב מומנט כפיפה בזרוע C בנקודת חיבור הבוכנה (E) ---
-    // נחתוך בנקודה E ונסתכל על החלק העליון (מ-E עד P2)
-    // הכוחות הפועלים על החלק העליון: הכוח מ-A בנקודה P2.
-    // וקטור המרחק מ-E ל-P2
-    const r_E_to_P2_x = P2.x - P_piston_head.x;
-    const r_E_to_P2_y = P2.y - P_piston_head.y;
-    
-    // מומנט בנקודה E = r x F (כאשר F הוא F_A_on_C)
-    // M = rx * Fy - ry * Fx
-    const Moment_C_at_E = r_E_to_P2_x * F_A_on_C_y - r_E_to_P2_y * F_A_on_C_x;
-
-    // כוח צירי בזרוע C (בחלק התחתון)
-    // סכום כוחות על C: R1 + F_p + F_A_on_C = 0
-    // נחשב ריאקציה ב-P1
-    const R1_x = -(F_p * dirP.x + F_A_on_C_x);
-    const R1_y = -(F_p * dirP.y + F_A_on_C_y);
-    // הטלה לציר המוט
-    const axial_C = R1_x * Math.cos(geo.radC) + R1_y * Math.sin(geo.radC);
-
-
-    // --- שלב 3: ריאקציות בסמכים ---
-    const dist_FG = Sup_R.x - Sup_L.x;
-    const dist_W_F = midA.x - Sup_L.x;
-    let R_G = 0, R_F = 0;
-    if (dist_FG > 1e-5) {
-        R_G = (W * dist_W_F) / dist_FG;
-        R_F = W - R_G;
+    if(Math.abs(lever_piston) > 1e-4) {
+        F_p = -Moment_C_External / lever_piston;
     }
+    
+    // לחץ
+    const radius = params.PistonD / 2;
+    const area = Math.PI * radius * radius;
+    const pressure = Math.abs(F_p) / area;
 
     return { 
-        F_p, F_d, R_F, R_G, W,
-        Moment_C: Math.abs(Moment_C_at_E),
-        Moment_A: Math.abs(MaxMoment_A),
-        Axial_C: axial_C,
-        Axial_A: F_axial_A,
-        F_A_on_C_x, F_A_on_C_y,
-        dirD, dirP
+        F_p: Math.abs(F_p), 
+        F_d: F_d, 
+        Moment_Load,
+        lever_piston: Math.abs(lever_piston),
+        Moment_C_External: Math.abs(Moment_C_External),
+        Pressure: pressure,
+        Area: area
     };
 }
 
-// --- ציור ---
+// --- DRAWING ---
 const canvas = document.getElementById('simCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -305,20 +281,19 @@ function initCanvas() {
     const w = canvas.parentElement.clientWidth;
     const h = canvas.parentElement.clientHeight;
     canvas.width = w; canvas.height = h;
-    const maxDimX = Math.max(params.B, params.A+params.C); 
-    const maxDimY = params.C + params.A/2;
-    cam.scale = Math.min(w/(maxDimX*1.2), h/(maxDimY*1.5));
-    cam.x = w/2 - (params.B*cam.scale)/2;
-    cam.y = h - 60;
+    cam.x = w/2 - (params.B/2); // Center roughly
+    cam.y = h - 50;
+    // Auto scale roughly
+    const mechW = params.B + 50;
+    cam.scale = w / mechW * 0.9;
 }
 
 function draw(geo) {
     const w = canvas.width; const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0,0,w,h);
     
     if(!geo) {
-        ctx.fillStyle = "red"; ctx.font = "20px sans-serif"; ctx.textAlign = "center";
-        ctx.fillText("גיאומטריה לא תקינה", w/2, h/2);
+        ctx.fillStyle = "red"; ctx.font="16px sans-serif"; ctx.fillText("מידות לא תקינות", 20, 30);
         return;
     }
 
@@ -326,182 +301,138 @@ function draw(geo) {
     ctx.translate(cam.x, cam.y);
     ctx.scale(cam.scale, -cam.scale);
 
-    const line = (p1, p2, c, lw) => {
-        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
-        ctx.strokeStyle = c; ctx.lineWidth = lw; ctx.lineCap='round'; ctx.stroke();
-    };
-    const midpoint = (p1, p2) => ({x:(p1.x+p2.x)/2, y:(p1.y+p2.y)/2});
+    const line = (p1, p2, c, w) => { ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.strokeStyle=c; ctx.lineWidth=w; ctx.stroke(); };
+    const circle = (p, r, c) => { ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fillStyle=c; ctx.fill(); ctx.stroke(); };
 
-    const drawLabel = (text, p, offsetX, offsetY, color='#333') => {
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.scale(1, -1); 
-        ctx.fillStyle = color; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(text, offsetX, -offsetY);
-        ctx.restore();
-    }
+    // רצפה
+    line({x:-100,y:-10}, {x:params.B+100,y:-10}, '#ccc', 2);
 
-    // קרקע
-    line({x:-500, y:-20}, {x: 1000, y:-20}, '#ddd', 2);
-    // בסיס
-    line(P1, P4, '#333', 6);
-    drawLabel("B", midpoint(P1, P4), 0, -25);
-
-    // סמכים
-    [Sup_L, Sup_R].forEach((p, i) => {
-        ctx.fillStyle = '#555'; ctx.beginPath();
-        ctx.moveTo(p.x, 0); ctx.lineTo(p.x-15, -20); ctx.lineTo(p.x+15, -20); ctx.fill();
-        drawLabel(i===0?"F":"G", p, 0, -45);
-    });
+    // חברים
+    line(P1, P4, '#333', 6); // B
+    line(P1, P2, '#555', 8); // C
+    line(P4, P3, '#555', 8); // D
+    line(P2, P3, '#1976D2', 10); // A
 
     // בוכנה
-    ctx.lineWidth = 14; ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--accent');
-    ctx.beginPath(); ctx.moveTo(P_piston_base.x, P_piston_base.y);
-    const midP = midpoint(P_piston_base, P_piston_head);
+    ctx.strokeStyle = '#FF6D00'; ctx.lineWidth = 12; ctx.beginPath();
+    ctx.moveTo(P_piston_base.x, P_piston_base.y);
+    const midP = {x: (P_piston_base.x+P_piston_head.x)/2, y: (P_piston_base.y+P_piston_head.y)/2};
     ctx.lineTo(midP.x, midP.y); ctx.stroke();
-    ctx.lineWidth = 6; ctx.strokeStyle = '#999';
-    ctx.beginPath(); ctx.moveTo(midP.x, midP.y); ctx.lineTo(P_piston_head.x, P_piston_head.y); ctx.stroke();
-    
-    // זרועות
-    line(P1, P2, '#666', 10); drawLabel("C", midpoint(P1, P2), -25, 0);
-    line(P4, P3, '#666', 10); drawLabel("D", midpoint(P4, P3), 25, 0);
-
-    // קורה עליונה
-    line(P2, P3, getComputedStyle(document.body).getPropertyValue('--primary'), 14);
-    drawLabel("A", midpoint(P2, P3), 0, 30);
-
-    // חיצים לעומס
-    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--load-color');
-    const arrowLen = 40 / cam.scale;
-    const headSize = 10 / cam.scale;
-    for(let i=1; i<=3; i++) {
-        const t = i/4;
-        const px = P2.x + t*(P3.x - P2.x);
-        const py = P2.y + t*(P3.y - P2.y);
-        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py - arrowLen);
-        ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 3; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px, py - arrowLen - headSize);
-        ctx.lineTo(px - headSize/2, py - arrowLen); ctx.lineTo(px + headSize/2, py - arrowLen); ctx.fill();
-    }
+    ctx.strokeStyle = '#888'; ctx.lineWidth = 5; ctx.beginPath();
+    ctx.moveTo(midP.x, midP.y); ctx.lineTo(P_piston_head.x, P_piston_head.y); ctx.stroke();
 
     // מפרקים
-    [P1, P2, P3, P4, P_piston_base, P_piston_head].forEach(p => {
-        ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
-        ctx.fillStyle='#fff'; ctx.fill(); ctx.stroke();
-    });
+    [P1, P2, P3, P4].forEach(p => circle(p, 4, 'white'));
+    circle(P_piston_base, 3, 'white'); circle(P_piston_head, 3, 'white');
+
+    // ציור זווית B-D
+    // קשת ליד P4
+    const rArc = 40;
+    ctx.beginPath();
+    // מאופק (180 מעלות = PI) עד הזווית של D
+    // במערכת צירים הפוכה שלנו, P4 הוא המרכז. B הוא שמאלה (PI). D הוא למעלה-שמאלה.
+    // נצייר קשת מ-geo.angD עד PI
+    ctx.arc(P4.x, P4.y, rArc, geo.angD, Math.PI);
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+    
+    // טקסט זווית
+    ctx.save();
+    ctx.translate(P4.x, P4.y);
+    ctx.scale(1, -1);
+    ctx.fillStyle = '#d32f2f'; ctx.font = "bold 14px Arial";
+    // מיקום הטקסט קצת שמאלה ולמעלה
+    ctx.fillText(geo.angBD.toFixed(1) + "°", -rArc - 10, -10);
+    ctx.restore();
 
     ctx.restore();
 }
 
-// --- מחוות מגע ---
-canvas.addEventListener('touchstart', e => {
-    isDragging = true;
-    if(e.touches.length === 2) {
-        lastTouch.dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-    } else { lastTouch.x = e.touches[0].clientX; lastTouch.y = e.touches[0].clientY; }
-}, {passive: false});
+// --- LOGIC ---
+function update() {
+    // Read Inputs
+    ['A','B','C','D','E','H','Load','PistonD'].forEach(k => {
+        const val = parseFloat(document.getElementById('inp_'+k).value);
+        if(!isNaN(val)) params[k] = val;
+    });
 
-canvas.addEventListener('touchmove', e => {
-    e.preventDefault(); if(!isDragging) return;
-    if(e.touches.length === 2) {
-        const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-        cam.scale *= (1 + (dist - lastTouch.dist) * 0.005);
-        lastTouch.dist = dist;
-    } else {
-        cam.x += e.touches[0].clientX - lastTouch.x;
-        cam.y += e.touches[0].clientY - lastTouch.y;
-        lastTouch.x = e.touches[0].clientX; lastTouch.y = e.touches[0].clientY;
-    }
-    requestAnimationFrame(updateLoop);
-}, {passive: false});
-canvas.addEventListener('touchend', () => isDragging = false);
-
-// --- לולאה ראשית ---
-function updateLoop() {
-    ['A','B','C','D','E','H','F','G','Load'].forEach(k => params[k] = parseFloat(document.getElementById('inp_'+k).value) || 0);
-    
-    const slideVal = parseFloat(document.getElementById('liftSlider').value);
-    const geo = solveGeometry(slideVal);
-    
+    const slide = parseFloat(document.getElementById('liftSlider').value);
+    const geo = solveGeometry(slide);
     draw(geo);
-    
+
     if(geo) {
-        const forces = solveForces(geo);
-        updateData(geo, forces);
+        const res = solveForces(geo);
+        updateMath(geo, res);
     }
 }
 
-function updateData(geo, forces) {
-    document.getElementById('angleDisplay').innerText = (geo.radC * 180/Math.PI).toFixed(0) + "°";
+function updateMath(geo, res) {
+    document.getElementById('angleDisplay').innerText = geo.angBD.toFixed(0) + "° (זווית D-B)";
+
+    const fmt = n => n.toLocaleString('en-US', {maximumFractionDigits:1});
     
-    const k = n => (n/1000).toFixed(2); // לקילו-ניוטון
-    const ang = r => (r*180/Math.PI).toFixed(1);
+    // בניה של ה-Latex
+    const html = `
+    <div class="math-title">1. אנליזת בוכנה (Step-by-Step)</div>
+    <div class="step-desc">שלב א': חישוב מומנט חיצוני על זרוע C (שנוצר ע"י העומס מלמעלה)</div>
+    $$ M_{external} = ${fmt(res.Moment_C_External)} \\text{ kg}\\cdot\\text{cm} $$
     
-    // טקסטים ל-MathJax
-    const tex = `
-    <div class="math-header">1. נתוני בסיס וגיאומטריה</div>
-    $$ W_{load} = ${k(forces.W)} \\text{ kN} $$
-    $$ \\theta_A = ${ang(geo.angA)}^\\circ, \\; \\theta_C = ${ang(geo.radC)}^\\circ $$
-    $$ \\theta_{piston} = ${ang(geo.angPiston)}^\\circ $$
+    <div class="step-desc">שלב ב': חישוב זרוע המומנט האפקטיבית של הבוכנה (מרחק ניצב לציר הסיבוב)</div>
+    $$ d_{piston} = ${fmt(res.lever_piston)} \\text{ cm} $$
+    
+    <div class="step-desc">שלב ג': חישוב כוח הבוכנה (מומנט חלקי זרוע)</div>
+    $$ F_{piston} = \\frac{M_{external}}{d_{piston}} = \\frac{${fmt(res.Moment_C_External)}}{${fmt(res.lever_piston)}} $$
+    $$ \\mathbf{F_{piston} = ${fmt(res.F_p)} \\text{ kg}} $$
 
-    <div class="math-header">2. זרוע D (מוט דו-כוח)</div>
-    <div style="font-size:0.9em; color:#555; margin-bottom:5px;">
-        הזרוע D היא מוט המחבר שני מפרקים, ולכן נושאת רק כוח צירי (לחיצה/מתיחה). הכוח מחושב מתוך שיווי משקל מומנטים על קורה A.
-    </div>
-    $$ \\sum M_{P2} = 0 \\implies F_D \\cdot d_{\\perp} = W \\cdot d_{load} $$
-    $$ \\mathbf{F_{Axial, D} = ${k(forces.F_d)} \\text{ kN}} $$
-    <small>(שלילי = לחיצה)</small>
+    <div class="math-title">2. לחץ הידראולי</div>
+    <div class="step-desc">חישוב שטח הבוכנה והלחץ הנדרש</div>
+    $$ Area = \\pi \\cdot r^2 = \\pi \\cdot ${(params.PistonD/2).toFixed(1)}^2 = ${fmt(res.Area)} \\text{ cm}^2 $$
+    $$ Pressure = \\frac{F}{A} = \\frac{${fmt(res.F_p)}}{${fmt(res.Area)}} $$
+    $$ \\mathbf{P = ${fmt(res.Pressure)} \\text{ kg/cm}^2 \\text{ (Atm)}} $$
 
-    <div class="math-header">3. כוחות על הבוכנה</div>
-    <div style="font-size:0.9em; color:#555; margin-bottom:5px;">
-        מחושב מתוך שיווי משקל מומנטים על זרוע C סביב הבסיס P1. הבוכנה מתנגדת למומנט הנוצר מהכוח שמפעילה קורה A.
-    </div>
-    $$ \\sum M_{P1} = 0 \\implies F_{piston} = \\frac{M_{reaction}}{d_{arm}} $$
-    $$ \\mathbf{F_{piston} = ${k(forces.F_p)} \\text{ kN}} $$
-
-    <div class="math-header">4. קורה עליונה A</div>
-    <div style="font-size:0.9em; color:#555;">
-        מכיוון שהעומס מפורס (משקל עצמי/מטען), נוצר מומנט כפיפה מקסימלי במרכז הקורה.
-    </div>
-    $$ M_{max, A} \\approx \\frac{W_{\\perp} L}{8} $$
-    $$ \\mathbf{M_{Bend, A} = ${(forces.Moment_A/1000).toFixed(2)} \\text{ kNm}} $$
-    $$ F_{Axial, A} \\approx ${k(forces.Axial_A)} \\text{ kN} $$
-
-    <div class="math-header">5. זרוע הרמה C</div>
-    <div style="font-size:0.9em; color:#555;">
-        זרוע זו סובלת מכפיפה חזקה בנקודת חיבור הבוכנה (E), וכוח צירי גבוה בחלק התחתון.
-    </div>
-    $$ M_{E} = F_{reaction} \\cdot d_{E-P2} $$
-    $$ \\mathbf{M_{Bend, C} (at E) = ${(forces.Moment_C/1000).toFixed(2)} \\text{ kNm}} $$
-    $$ \\mathbf{F_{Axial, C} (base) = ${(forces.Axial_C/1000).toFixed(2)} \\text{ kN}} $$
-
-    <div class="math-header">6. ריאקציות בקרקע</div>
-    $$ R_F = ${k(forces.R_F)} \\text{ kN} $$
-    $$ R_G = ${k(forces.R_G)} \\text{ kN} $$
+    <div class="math-title">3. גיאומטריה וכוחות נוספים</div>
+    $$ \\text{Angle B-D} = ${geo.angBD.toFixed(1)}^\\circ $$
+    $$ F_{Link D} = ${fmt(res.F_d)} \\text{ kg} $$
     `;
 
     const el = document.getElementById('math-display');
-    // עדכון רק אם יש שינוי משמעותי כדי למנוע הבהוב
-    if(Math.abs(forces.F_p - (el.dataset.lastFp || 0)) > 50) {
-        el.dataset.lastFp = forces.F_p;
-        el.innerHTML = tex;
-        if(window.MathJax) MathJax.typesetPromise([el]);
+    // Simple cache to prevent reload flicker
+    if(el.innerHTML.length < 100 || Math.abs(res.F_p - parseFloat(el.dataset.lp)) > 10) {
+        el.dataset.lp = res.F_p;
+        el.innerHTML = html;
+        MathJax.typesetPromise([el]);
     }
 }
 
-// מאזינים לאירועים
-document.querySelectorAll('input').forEach(i => i.addEventListener('input', updateLoop));
+// Interaction
+const cvs = document.getElementById('canvas-container');
+cvs.addEventListener('touchstart', e => {
+    isDragging=true; 
+    if(e.touches.length===2) lastTouch.dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    else { lastTouch.x=e.touches[0].clientX; lastTouch.y=e.touches[0].clientY; }
+}, {passive:false});
+cvs.addEventListener('touchmove', e => {
+    e.preventDefault(); if(!isDragging) return;
+    if(e.touches.length===2) {
+        const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+        cam.scale *= (1 + (d-lastTouch.dist)*0.005); lastTouch.dist=d;
+    } else {
+        cam.x += e.touches[0].clientX-lastTouch.x; cam.y += e.touches[0].clientY-lastTouch.y;
+        lastTouch.x=e.touches[0].clientX; lastTouch.y=e.touches[0].clientY;
+    }
+    requestAnimationFrame(()=>draw(solveGeometry(document.getElementById('liftSlider').value)));
+}, {passive:false});
+cvs.addEventListener('touchend', ()=>isDragging=false);
 
-window.switchTab = function(t, e) {
-    document.querySelectorAll('.section').forEach(d => d.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(tb => tb.classList.remove('active'));
-    document.getElementById('tab-'+t).classList.add('active');
-    e.target.classList.add('active');
-}
+document.querySelectorAll('input').forEach(i => i.addEventListener('input', update));
+window.switchTab = (t,e) => {
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(tb=>tb.classList.remove('active'));
+    document.getElementById('tab-'+t).classList.add('active'); e.target.classList.add('active');
+};
 
-// אתחול
+// Init
 initCanvas();
-updateLoop();
+update();
 
 </script>
 </body>
